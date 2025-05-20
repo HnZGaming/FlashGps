@@ -5,7 +5,7 @@ namespace HNZ.FlashGps.Interface
 {
     public static class FlashGpsSerialization
     {
-        public static void WriteAddOrUpdateFlashGps(this BinaryWriter writer, long moduleId, FlashGpsSource src)
+        public static void WriteUpsertFlashGps(this BinaryWriter writer, long moduleId, FlashGpsSource src)
         {
             // optimize network load
             src.ExcludedPlayers = null;
@@ -23,18 +23,18 @@ namespace HNZ.FlashGps.Interface
             writer.Write(gpsId);
         }
 
-        public static void ReadFlashGps(this BinaryReader reader, out bool isAddOrUpdate, out long moduleId, out FlashGpsSource source, out long gpsId)
+        public static void ReadFlashGps(this BinaryReader reader, out bool isUpsert, out long moduleId, out FlashGpsSource source, out long gpsId)
         {
             if (reader.ReadBoolean())
             {
-                isAddOrUpdate = true;
+                isUpsert = true;
                 moduleId = reader.ReadInt64();
                 source = reader.ReadProtobuf<FlashGpsSource>();
                 gpsId = source.Id;
             }
             else
             {
-                isAddOrUpdate = false;
+                isUpsert = false;
                 moduleId = reader.ReadInt64();
                 gpsId = reader.ReadInt64();
                 source = null;

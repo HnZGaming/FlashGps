@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using HNZ.FlashGps.Interface;
+using HNZ.Utils;
 using HNZ.Utils.Communications;
 using HNZ.Utils.Logging;
 using HNZ.Utils.Pools;
@@ -57,9 +58,9 @@ namespace HNZ.FlashGps
             }
         }
 
-        public void SendAddOrUpdateGps(long moduleId, FlashGpsSource src, bool reliable = true)
+        public void SendUpsertGps(long moduleId, FlashGpsSource src, bool reliable = true)
         {
-            Log.Debug($"Sending add or update: {moduleId}, {src.Id}, \"{src.Name}\"");
+            Log.Debug($"Sending upsert: {moduleId}, {src.Id}, \"{src.Name}\"");
 
             if (src.Id == 0)
             {
@@ -67,12 +68,24 @@ namespace HNZ.FlashGps
             }
 
             var playerIds = SetPool<ulong>.Create();
-            _serverGpsFilter.GetReceivingPlayerIds(src, playerIds);
+
+            // single player mode
+            if (MyAPIGateway.Session.IsServer && !MyAPIGateway.Utilities.IsDedicated)
+            {
+                Log.Debug("single player mode");
+                playerIds.Add(MyAPIGateway.Session.Player.SteamUserId);
+            }
+            else
+            {
+                _serverGpsFilter.GetReceivingPlayerIds(src, playerIds);
+            }
+
+            Log.Debug($"receiving: {playerIds.SeqToString()}");
 
             using (var stream = new ByteStream(1024))
             using (var writer = new BinaryWriter(stream))
             {
-                writer.WriteAddOrUpdateFlashGps(moduleId, src);
+                writer.WriteUpsertFlashGps(moduleId, src);
                 _protobufModule.SendDataToClients(_loadId, stream.Data, reliable, playerIds);
             }
 
@@ -96,14 +109,14 @@ namespace HNZ.FlashGps
         {
             if (loadId != _loadId) return false;
 
-            bool isAddOrUpdate;
+            bool isUpsert;
             long moduleId;
             FlashGpsSource src;
             long gpsId;
-            reader.ReadFlashGps(out isAddOrUpdate, out moduleId, out src, out gpsId);
-            if (isAddOrUpdate)
+            reader.ReadFlashGps(out isUpsert, out moduleId, out src, out gpsId);
+            if (isUpsert)
             {
-                AddOrUpdateGps(moduleId, src);
+                UpsertGps(moduleId, src);
             }
             else
             {
@@ -113,11 +126,11 @@ namespace HNZ.FlashGps
             return true;
         }
 
-        void AddOrUpdateGps(long moduleId, FlashGpsSource src)
+        void UpsertGps(long moduleId, FlashGpsSource src)
         {
             Log.Debug($"Received add or update: {moduleId}, {src.Id}, \"{src.Name}\"");
 
-            GetFlashGpsCollection(moduleId).AddOrUpdateGps(src);
+            GetFlashGpsCollection(moduleId).UpsertGps(src);
         }
 
         void RemoveGps(long moduleId, long gpsId)

@@ -29,7 +29,7 @@ namespace HNZ.FlashGps
         {
             _serverPlayers.Clear();
 
-            var players = ListPool<IMyPlayer>.Create();
+            var players = ListPool<IMyPlayer>.Get();
             MyAPIGateway.Players.GetPlayers(players);
             foreach (var player in players)
             {

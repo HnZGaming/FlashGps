@@ -20,7 +20,7 @@ namespace HNZ.FlashGps
             _gpsEntries = new Dictionary<long, ClientGps>();
         }
 
-        public void AddOrUpdateGps(FlashGpsSource src)
+        public void UpsertGps(FlashGpsSource src)
         {
             var localPlayer = MyAPIGateway.Session.LocalHumanPlayer;
             var character = localPlayer?.Character;
@@ -32,8 +32,9 @@ namespace HNZ.FlashGps
                 return;
             }
 
+            // insert
             ClientGps gpsEntry;
-            if (!_gpsEntries.TryGetValue(src.Id, out gpsEntry)) // add
+            if (!_gpsEntries.TryGetValue(src.Id, out gpsEntry))
             {
                 var gps = MyAPIGateway.Session.GPS.Create($"{src.Id}", src.Description, src.Position, true, false);
 
@@ -50,9 +51,10 @@ namespace HNZ.FlashGps
                     Follow = new ClientGpsFollow(gps),
                 };
 
-                Log.Debug($"added; id: {src.Id}, name: {src.Name}, pos: {src.Position}, radius: {src.Radius}");
+                Log.Debug($"added; id: {src.Id}, name: {src.Name}, pos: {src.Position}, radius: {src.Radius}, jingle: {!src.SuppressSound}");
             }
 
+            // update
             gpsEntry.Gps.Name = src.Name ?? "";
             gpsEntry.Gps.Description = src.Description ?? "";
             gpsEntry.Gps.GPSColor = src.Color;
@@ -78,7 +80,7 @@ namespace HNZ.FlashGps
 
         public void Update()
         {
-            var gpsEntries = ListPool<KeyValuePair<long, ClientGps>>.Create();
+            var gpsEntries = ListPool<KeyValuePair<long, ClientGps>>.Get();
             gpsEntries.AddRange(_gpsEntries);
 
             foreach (var p in gpsEntries)

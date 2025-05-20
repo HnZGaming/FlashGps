@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using HNZ.FlashGps.Interface;
 using HNZ.Utils;
 using HNZ.Utils.Communications;
@@ -16,6 +17,7 @@ namespace HNZ.FlashGps
     public class Session : MySessionComponentBase, ICommandListener
     {
         static readonly Logger Log = LoggerManager.Create(nameof(Session));
+        static readonly long ModuleId = nameof(FlashGps).GetHashCode();
 
         ContentFile<Config> _configFile;
         Dictionary<string, Action<Command>> _commands;
@@ -30,6 +32,8 @@ namespace HNZ.FlashGps
             _commands = new Dictionary<string, Action<Command>>
             {
                 { "reload", Command_Reload },
+                { "upsert", Command_Upsert },
+                { "remove", Command_Remove },
             };
 
             _protobufModule = new ProtobufModule((ushort)nameof(FlashGps).GetHashCode());
@@ -77,14 +81,14 @@ namespace HNZ.FlashGps
             using (var stream = new ByteStream(load, load.Length))
             using (var binaryReader = new BinaryReader(stream))
             {
-                bool isAddOrUpdate;
+                bool isUpsert;
                 long moduleId;
                 FlashGpsSource src;
                 long gpsId;
-                binaryReader.ReadFlashGps(out isAddOrUpdate, out moduleId, out src, out gpsId);
-                if (isAddOrUpdate)
+                binaryReader.ReadFlashGps(out isUpsert, out moduleId, out src, out gpsId);
+                if (isUpsert)
                 {
-                    _network.SendAddOrUpdateGps(moduleId, src);
+                    _network.SendUpsertGps(moduleId, src);
                 }
                 else
                 {
@@ -110,6 +114,59 @@ namespace HNZ.FlashGps
         {
             ReloadConfig();
             command.Respond("Local GPS", Color.White, "config reloaded");
+        }
+
+        void Command_Upsert(Command command)
+        {
+            try
+            {
+                var args = ParseCommandArg(command);
+
+                var src = new FlashGpsSource
+                {
+                    Id = long.Parse(args["id"]),
+                    Position = new Vector3D(
+                        float.Parse(args.GetValueOrDefault("x", "0")),
+                        float.Parse(args.GetValueOrDefault("y", "0")),
+                        float.Parse(args.GetValueOrDefault("z", "0"))),
+                    Color = Color.Green,
+                    Name = args.GetValueOrDefault("name", "debug"),
+                    Description = args.GetValueOrDefault("description", "debug"),
+                    DecaySeconds = int.Parse(args.GetValueOrDefault("decay", "5")),
+                    Radius = float.Parse(args.GetValueOrDefault("radius", "0")),
+                    EntityId = long.Parse(args.GetValueOrDefault("entity", "0")),
+                    PromoteLevel = int.Parse(args.GetValueOrDefault("level", "0")),
+                    ExcludedPlayers = Array.Empty<ulong>(),
+                    TargetPlayers = Array.Empty<ulong>(),
+                    SuppressSound = !bool.Parse(args.GetValueOrDefault("jingle", "true")),
+                };
+
+                var reliable = bool.Parse(args.GetValueOrDefault("reliable", "true"));
+
+                command.Respond("Local GPS", Color.White, $"sending upsert gps; id: {src.Id}");
+                _network.SendUpsertGps(ModuleId, src, reliable);
+            }
+            catch (Exception e)
+            {
+                command.Respond("Local GPS", Color.Red, $"error: {e}");
+            }
+        }
+
+        void Command_Remove(Command command)
+        {
+            var args = ParseCommandArg(command);
+            var id = long.Parse(args["id"]);
+            var reliable = bool.Parse(args.GetValueOrDefault("reliable", "true"));
+
+            command.Respond("Local GPS", Color.White, $"sending remove gps; id: {id}");
+            _network.SendRemoveGps(ModuleId, id, reliable);
+        }
+
+        static Dictionary<string, string> ParseCommandArg(Command command)
+        {
+            return command.Arguments
+                .Select(a => a.Split('='))
+                .ToDictionary(p => p[0], p => p[1]);
         }
     }
 }

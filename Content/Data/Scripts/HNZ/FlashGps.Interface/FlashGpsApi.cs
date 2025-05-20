@@ -15,12 +15,12 @@ namespace HNZ.FlashGps.Interface
             _moduleId = moduleId;
         }
 
-        public void AddOrUpdate(FlashGpsSource src)
+        public void Upsert(FlashGpsSource src)
         {
             using (var stream = new ByteStream(1024))
             using (var writer = new BinaryWriter(stream))
             {
-                writer.WriteAddOrUpdateFlashGps(_moduleId, src);
+                writer.WriteUpsertFlashGps(_moduleId, src);
                 MyAPIGateway.Utilities.SendModMessage(ModVersion, stream.Data);
             }
         }
