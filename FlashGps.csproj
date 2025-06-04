@@ -130,7 +130,10 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="Content\Data\Scripts\FlashGps\EntryState.cs" />
         <Compile Include="Content\Data\Scripts\FlashGps\FlashGpsApi.cs" />
+        <Compile Include="Content\Data\Scripts\FlashGps\ModMessageBroker.cs" />
+        <Compile Include="Content\Data\Scripts\FlashGps\Nexus\NexusAPI.cs" />
         <Compile Include="Content\Data\Scripts\FlashGps\Session.cs" />
         <Compile Include="Content\Data\Scripts\FlashGps\Utils\VRageUtils.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />

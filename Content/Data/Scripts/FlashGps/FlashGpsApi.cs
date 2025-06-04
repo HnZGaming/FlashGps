@@ -40,6 +40,9 @@ namespace FlashGps
 
             [ProtoMember(8)]
             public bool Mute { get; set; }
+
+            [ProtoMember(9)]
+            public string Description { get; set; }
         }
     }
 }

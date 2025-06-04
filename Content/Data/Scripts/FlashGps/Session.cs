@@ -4,7 +4,6 @@ using FlashGps.Utils;
 using Sandbox.ModAPI;
 using VRage.Game.Components;
 using VRage.Game.ModAPI;
-using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
 
@@ -15,7 +14,9 @@ namespace FlashGps
     public sealed class Session : MySessionComponentBase
     {
         static readonly ushort InternalKey = (ushort)"FlashGpsApi.Internal".GetHashCode();
-        Dictionary<long, Wrap> _wraps;
+        static readonly ushort NexusKey = (ushort)"FlashGpsApi.Nexus".GetHashCode();
+        ModMessageBroker _modMessageBroker;
+        Dictionary<long, EntryState> _states;
 
         public override void LoadData()
         {
@@ -23,12 +24,20 @@ namespace FlashGps
 
             if (MyAPIGateway.Session.IsServer)
             {
+                MyLog.Default.Info("[FlashGPS] loading as server");
+
+                _modMessageBroker = new ModMessageBroker(NexusKey);
+                _modMessageBroker.Load();
+                _modMessageBroker.OnReceived += OnModBrokerMessageReceived;
+
                 MyAPIGateway.Multiplayer.RegisterSecureMessageHandler(FlashGpsApi.Key, OnApiMessageReceived);
             }
 
             if (!MyAPIGateway.Utilities.IsDedicated)
             {
-                _wraps = new Dictionary<long, Wrap>();
+                MyLog.Default.Info("[FlashGPS] loading as client");
+
+                _states = new Dictionary<long, EntryState>();
                 MyAPIGateway.Multiplayer.RegisterSecureMessageHandler(InternalKey, OnInternalMessageReceived);
             }
         }
@@ -36,12 +45,26 @@ namespace FlashGps
         protected override void UnloadData()
         {
             base.UnloadData();
-            if (MyAPIGateway.Utilities.IsDedicated) return;
 
-            MyAPIGateway.Multiplayer.UnregisterSecureMessageHandler(InternalKey, OnApiMessageReceived);
-            MyAPIGateway.Multiplayer.UnregisterSecureMessageHandler(FlashGpsApi.Key, OnInternalMessageReceived);
+            if (MyAPIGateway.Session.IsServer)
+            {
+                MyLog.Default.Info("[FlashGPS] unloading as server");
+
+                _modMessageBroker.OnReceived -= OnModBrokerMessageReceived;
+                _modMessageBroker.Unload();
+
+                MyAPIGateway.Multiplayer.UnregisterSecureMessageHandler(FlashGpsApi.Key, OnInternalMessageReceived);
+            }
+
+            if (!MyAPIGateway.Utilities.IsDedicated)
+            {
+                MyLog.Default.Info("[FlashGPS] unloading as client");
+
+                MyAPIGateway.Multiplayer.UnregisterSecureMessageHandler(InternalKey, OnApiMessageReceived);
+            }
         }
 
+        // Called in server when `FlashGpsApi.Send()` is called in this server
         void OnApiMessageReceived(ushort modKey, byte[] bytes, ulong senderId, bool fromServer)
         {
             if (!MyAPIGateway.Session.IsServer)
@@ -50,8 +73,15 @@ namespace FlashGps
                 return;
             }
 
+            MyLog.Default.Info($"[FlashGPS] API message received; sender: {senderId}");
+            _modMessageBroker.Send(bytes);
+        }
+
+        // Called in server when `FlashGpsApi.Send()` is called in any servers in the same Nexus sector
+        void OnModBrokerMessageReceived(byte[] bytes)
+        {
             var entry = MyAPIGateway.Utilities.SerializeFromBinary<FlashGpsApi.Entry>(bytes);
-            MyLog.Default.Info($"[FlashGPS] API message received: {entry.Id}, {entry.Name}, {entry.Position}");
+            MyLog.Default.Info($"[FlashGPS] broker message received: {entry.Id}, {entry.Name}, {entry.Position}");
 
             var players = new List<IMyPlayer>();
             MyAPIGateway.Players.GetPlayers(players);
@@ -60,10 +90,12 @@ namespace FlashGps
             {
                 if (!CanReach(p, entry.Position, entry.Radius)) continue;
 
+                MyLog.Default.Info($"[FlashGPS] sending internal message; receiver id: {p.SteamUserId}");
                 MyAPIGateway.Multiplayer.SendMessageTo(InternalKey, bytes, p.SteamUserId);
             }
         }
 
+        // Called in client
         void OnInternalMessageReceived(ushort modKey, byte[] bytes, ulong senderId, bool fromServer)
         {
             if (MyAPIGateway.Utilities.IsDedicated)
@@ -73,9 +105,10 @@ namespace FlashGps
             }
 
             var entry = MyAPIGateway.Utilities.SerializeFromBinary<FlashGpsApi.Entry>(bytes);
+            MyLog.Default.Info($"[FlashGPS] internal message received: {entry.Id}, {entry.Name}, {entry.Position}");
 
-            Wrap wrap;
-            if (!_wraps.TryGetValue(entry.Id, out wrap))
+            EntryState state;
+            if (!_states.TryGetValue(entry.Id, out state))
             {
                 var gps = MyAPIGateway.Session.GPS.Create(entry.Name, "", entry.Position, true);
                 MyAPIGateway.Session.GPS.AddLocalGps(gps);
@@ -85,15 +118,16 @@ namespace FlashGps
                     VRageUtils.PlaySound("HudGPSNotification3");
                 }
 
-                wrap = new Wrap(gps, entry, DateTime.UtcNow);
-                _wraps.Add(entry.Id, wrap);
+                state = new EntryState(gps, entry, DateTime.UtcNow);
+                _states.Add(entry.Id, state);
             }
 
-            wrap.Gps.Name = entry.Name;
-            wrap.Gps.Coords = entry.Position;
-            wrap.Gps.GPSColor = entry.Color;
-            wrap.Entry = entry;
-            wrap.LastUpdate = DateTime.UtcNow;
+            state.Gps.Name = entry.Name ?? "";
+            state.Gps.Coords = entry.Position;
+            state.Gps.GPSColor = entry.Color;
+            state.Gps.Description = entry.Description ?? "";
+            state.Entry = entry;
+            state.LastUpdate = DateTime.UtcNow;
         }
 
         public override void UpdateBeforeSimulation()
@@ -101,7 +135,7 @@ namespace FlashGps
             base.UpdateBeforeSimulation();
             if (MyAPIGateway.Utilities.IsDedicated) return;
 
-            foreach (var kvp in _wraps)
+            foreach (var kvp in _states)
             {
                 UpdateEntityMapping(kvp.Value);
                 UpdatePosition(kvp.Value);
@@ -110,7 +144,7 @@ namespace FlashGps
             RemoveExpiredGps();
         }
 
-        static void UpdateEntityMapping(Wrap g)
+        static void UpdateEntityMapping(EntryState g)
         {
             var targetId = g.Entry.EntityId;
             if (targetId == 0)
@@ -125,7 +159,7 @@ namespace FlashGps
             //MyLog.Default.WriteLine($"[HnzCoopSeason] mapping entity to gps; name: '{g.Entry.Name}', entity: '{g.Entity}' ({g.Entry.EntityId})");
         }
 
-        static void UpdatePosition(Wrap g)
+        static void UpdatePosition(EntryState g)
         {
             g.Gps.Coords = g.Entity != null
                 ? g.Entity.GetPosition()
@@ -135,7 +169,7 @@ namespace FlashGps
         void RemoveExpiredGps()
         {
             var expiredIds = new List<long>();
-            foreach (var kvp in _wraps)
+            foreach (var kvp in _states)
             {
                 var wrap = kvp.Value;
                 if (ShouldRemove(wrap))
@@ -147,14 +181,14 @@ namespace FlashGps
 
             foreach (var expiredId in expiredIds)
             {
-                _wraps.Remove(expiredId);
+                _states.Remove(expiredId);
             }
         }
 
-        static bool ShouldRemove(Wrap wrap)
+        static bool ShouldRemove(EntryState state)
         {
-            if ((DateTime.UtcNow - wrap.LastUpdate).TotalSeconds > wrap.Entry.Duration) return true;
-            if (!CanReach(MyAPIGateway.Session.Player, wrap.Entry.Position, wrap.Entry.Radius)) return true;
+            if ((DateTime.UtcNow - state.LastUpdate).TotalSeconds > state.Entry.Duration) return true;
+            if (!CanReach(MyAPIGateway.Session.Player, state.Entry.Position, state.Entry.Radius)) return true;
 
             return false;
         }
@@ -170,21 +204,6 @@ namespace FlashGps
             if (sphere.Contains(character.GetPosition()) == ContainmentType.Disjoint) return false;
 
             return true;
-        }
-
-        sealed class Wrap
-        {
-            public readonly IMyGps Gps;
-            public FlashGpsApi.Entry Entry;
-            public DateTime LastUpdate;
-            public IMyEntity Entity;
-
-            public Wrap(IMyGps gps, FlashGpsApi.Entry entry, DateTime lastUpdate)
-            {
-                Entry = entry;
-                Gps = gps;
-                LastUpdate = lastUpdate;
-            }
         }
     }
 }

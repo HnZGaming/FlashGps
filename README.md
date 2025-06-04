@@ -1,12 +1,10 @@
 # Flash GPS
 
-API to show "flash" GPS entities.
+Modding API to "fire and forget" GPS entities.
 
-* Flash GPS entities are instantiated client side only.
+* Flash GPS doesn't contaminate vanilla GPS collection.
 * Flash GPS disappears automatically in a set duration of time.
-* Flash GPS entities are based on ID, instead of GPS hash.
-
-This helps you "fire and forget" GPS entities to players.
+* Flash GPS is tracked by modder-defined string key, instead of GPS hash.
 
 ## How to Use
 
