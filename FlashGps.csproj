@@ -130,47 +130,13 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
-        <Compile Include="Content\Data\Scripts\HNZ\FlashGps.Interface\FlashGpsApi.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\FlashGps.Interface\FlashGpsSerialization.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\FlashGps.Interface\FlashGpsSource.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\FlashGps\Config.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\FlashGps\ClientGpsCollection.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\FlashGps\ClientGps.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\FlashGps\ClientGpsFollow.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\FlashGps\ServerGpsFilter.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\FlashGps\Network.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\FlashGps\Session.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\AddRemoveObserver.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\BoundaryObserver.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\CharacterToPlayerLookup.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\Communications\Command.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\Communications\CommandModule.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\Communications\ICommandListener.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\Communications\IProtobufListener.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\Communications\ProtobufModule.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\Communications\ProtobufUtils.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\ContentFile.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\Disposable.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\GameUtils.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\JumpDriveSuppressor.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\LangUtils.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\Logging\LogConfig.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\Logging\Logger.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\Logging\LoggerManager.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\MathUtils.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\Pools\DictionaryPool.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\Pools\ListPool.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\Pools\SetPool.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\SafeZoneSuppressor.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\SceneEntityObserver.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\SceneEntityTracker.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\SerializableDictionaryUtils.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\UpdateDiagnostics.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\UpdateSpanObserver.cs" />
+        <Compile Include="Content\Data\Scripts\FlashGps\EntryState.cs" />
+        <Compile Include="Content\Data\Scripts\FlashGps\FlashGpsApi.cs" />
+        <Compile Include="Content\Data\Scripts\FlashGps\ModMessageBroker.cs" />
+        <Compile Include="Content\Data\Scripts\FlashGps\Nexus\NexusAPI.cs" />
+        <Compile Include="Content\Data\Scripts\FlashGps\Session.cs" />
+        <Compile Include="Content\Data\Scripts\FlashGps\Utils\VRageUtils.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
-    </ItemGroup>
-    <ItemGroup>
-      <Content Include="Content\Data\Scripts\HNZ\Utils\.git" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
