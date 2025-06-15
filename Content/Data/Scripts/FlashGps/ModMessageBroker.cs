@@ -35,14 +35,14 @@ namespace FlashGps
 
             foreach (var server in GetOtherNexusServers())
             {
-                MyLog.Default.Info($"[FlashGPS] sending Nexus message to server: {server}");
+                MyLog.Default.Debug($"[FlashGPS] sending Nexus message to server: {server}");
                 _nexusApi.SendMessageToServer(server, bytes);
             }
         }
 
         void OnMessageReceived(ushort key, byte[] bytes, ulong senderId, bool fromServer)
         {
-            MyLog.Default.Info("[FlashGPS] Nexus message received");
+            MyLog.Default.Debug("[FlashGPS] Nexus message received");
             OnReceived?.Invoke(bytes);
         }
 

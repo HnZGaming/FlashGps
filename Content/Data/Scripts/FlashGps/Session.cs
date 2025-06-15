@@ -73,7 +73,7 @@ namespace FlashGps
                 return;
             }
 
-            MyLog.Default.Info($"[FlashGPS] API message received; sender: {senderId}");
+            MyLog.Default.Debug($"[FlashGPS] API message received; sender: {senderId}");
             _modMessageBroker.Send(bytes);
         }
 
@@ -81,7 +81,7 @@ namespace FlashGps
         void OnModBrokerMessageReceived(byte[] bytes)
         {
             var entry = MyAPIGateway.Utilities.SerializeFromBinary<FlashGpsApi.Entry>(bytes);
-            MyLog.Default.Info($"[FlashGPS] broker message received: {entry.Id}, {entry.Name}, {entry.Position}");
+            MyLog.Default.Debug($"[FlashGPS] broker message received: {entry.Id}, {entry.Name}, {entry.Position}");
 
             var players = new List<IMyPlayer>();
             MyAPIGateway.Players.GetPlayers(players);
@@ -90,7 +90,7 @@ namespace FlashGps
             {
                 if (!CanReach(p, entry.Position, entry.Radius)) continue;
 
-                MyLog.Default.Info($"[FlashGPS] sending internal message; receiver id: {p.SteamUserId}");
+                MyLog.Default.Debug($"[FlashGPS] sending internal message; receiver id: {p.SteamUserId}");
                 MyAPIGateway.Multiplayer.SendMessageTo(InternalKey, bytes, p.SteamUserId);
             }
         }
@@ -105,7 +105,7 @@ namespace FlashGps
             }
 
             var entry = MyAPIGateway.Utilities.SerializeFromBinary<FlashGpsApi.Entry>(bytes);
-            MyLog.Default.Info($"[FlashGPS] internal message received: {entry.Id}, {entry.Name}, {entry.Position}");
+            MyLog.Default.Debug($"[FlashGPS] internal message received: {entry.Id}, {entry.Name}, {entry.Position}");
 
             EntryState state;
             if (!_states.TryGetValue(entry.Id, out state))
