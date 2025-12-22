@@ -73,7 +73,7 @@ namespace FlashGps
                 return;
             }
 
-            MyLog.Default.Info($"[FlashGPS] API message received; sender: {senderId}");
+            MyLog.Default.Debug($"[FlashGPS] API message received; sender: {senderId}");
             _modMessageBroker.Send(bytes);
         }
 
@@ -81,7 +81,7 @@ namespace FlashGps
         void OnModBrokerMessageReceived(byte[] bytes)
         {
             var entry = MyAPIGateway.Utilities.SerializeFromBinary<FlashGpsApi.Entry>(bytes);
-            MyLog.Default.Info($"[FlashGPS] broker message received: {entry.Id}, {entry.Name}, {entry.Position}");
+            MyLog.Default.Debug($"[FlashGPS] broker message received: {entry.Id}, {entry.Name}, {entry.Position}");
 
             var players = new List<IMyPlayer>();
             MyAPIGateway.Players.GetPlayers(players);
@@ -90,7 +90,7 @@ namespace FlashGps
             {
                 if (!CanReach(p, entry.Position, entry.Radius)) continue;
 
-                MyLog.Default.Info($"[FlashGPS] sending internal message; receiver: {p.SteamUserId}");
+                MyLog.Default.Debug($"[FlashGPS] sending internal message; receiver: {p.SteamUserId}");
                 MyAPIGateway.Multiplayer.SendMessageTo(InternalKey, bytes, p.SteamUserId);
             }
         }
@@ -105,7 +105,7 @@ namespace FlashGps
             }
 
             var entry = MyAPIGateway.Utilities.SerializeFromBinary<FlashGpsApi.Entry>(bytes);
-            MyLog.Default.Info($"[FlashGPS] internal message received: {entry.Id}, {entry.Name}, {entry.Position}");
+            MyLog.Default.Debug($"[FlashGPS] internal message received: {entry.Id}, {entry.Name}, {entry.Position}");
 
             EntryState state;
             if (!_states.TryGetValue(entry.Id, out state))
@@ -120,7 +120,7 @@ namespace FlashGps
 
                 state = new EntryState(gps, entry, DateTime.UtcNow);
                 _states.Add(entry.Id, state);
-                MyLog.Default.Info($"[FlashGPS] Created; id: {entry.Id}");
+                MyLog.Default.Debug($"[FlashGPS] Created; id: {entry.Id}");
             }
 
             state.Gps.Name = entry.Name ?? "";
@@ -157,7 +157,7 @@ namespace FlashGps
             if (g.Entity?.EntityId == targetId) return;
 
             g.Entity = MyAPIGateway.Entities.GetEntityById(targetId);
-            MyLog.Default.Info($"[FlashGPS] Mapping; name: '{g.Entry.Name}', entity: '{g.Entity}' ({g.Entry.EntityId})");
+            MyLog.Default.Debug($"[FlashGPS] Mapping; name: '{g.Entry.Name}', entity: '{g.Entity}' ({g.Entry.EntityId})");
         }
 
         static void UpdatePosition(EntryState g)
@@ -177,7 +177,7 @@ namespace FlashGps
                 {
                     expiredIds.Add(kvp.Key);
                     MyAPIGateway.Session.GPS.RemoveLocalGps(wrap.Gps);
-                    MyLog.Default.Info($"[FlashGPS] Expired: {kvp.Key}");
+                    MyLog.Default.Debug($"[FlashGPS] Expired: {kvp.Key}");
                 }
             }
 
