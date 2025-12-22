@@ -90,7 +90,7 @@ namespace FlashGps
             {
                 if (!CanReach(p, entry.Position, entry.Radius)) continue;
 
-                MyLog.Default.Debug($"[FlashGPS] sending internal message; receiver id: {p.SteamUserId}");
+                MyLog.Default.Debug($"[FlashGPS] sending internal message; receiver: {p.SteamUserId}");
                 MyAPIGateway.Multiplayer.SendMessageTo(InternalKey, bytes, p.SteamUserId);
             }
         }
@@ -120,6 +120,7 @@ namespace FlashGps
 
                 state = new EntryState(gps, entry, DateTime.UtcNow);
                 _states.Add(entry.Id, state);
+                MyLog.Default.Debug($"[FlashGPS] Created; id: {entry.Id}");
             }
 
             state.Gps.Name = entry.Name ?? "";
@@ -156,7 +157,7 @@ namespace FlashGps
             if (g.Entity?.EntityId == targetId) return;
 
             g.Entity = MyAPIGateway.Entities.GetEntityById(targetId);
-            //MyLog.Default.WriteLine($"[HnzCoopSeason] mapping entity to gps; name: '{g.Entry.Name}', entity: '{g.Entity}' ({g.Entry.EntityId})");
+            MyLog.Default.Debug($"[FlashGPS] Mapping; name: '{g.Entry.Name}', entity: '{g.Entity}' ({g.Entry.EntityId})");
         }
 
         static void UpdatePosition(EntryState g)
@@ -176,6 +177,7 @@ namespace FlashGps
                 {
                     expiredIds.Add(kvp.Key);
                     MyAPIGateway.Session.GPS.RemoveLocalGps(wrap.Gps);
+                    MyLog.Default.Debug($"[FlashGPS] Expired: {kvp.Key}");
                 }
             }
 

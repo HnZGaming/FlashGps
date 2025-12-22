@@ -138,5 +138,10 @@
         <Compile Include="Content\Data\Scripts\FlashGps\Utils\VRageUtils.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
     </ItemGroup>
+    <ItemGroup>
+      <Content Include="Content\metadata.mod" />
+      <Content Include="Content\modinfo.sbmi" />
+      <Content Include="symlink.bat" />
+    </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
